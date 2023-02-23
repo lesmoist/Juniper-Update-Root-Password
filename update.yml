@@ -1,19 +1,19 @@
-- name: Configure root password on Juniper switch
-  hosts: juniper_switches
+- name: Update Junos root password
+  hosts: juniper_devices
   gather_facts: no
   vars_prompt:
     - name: new_password
       prompt: "Enter new root password"
       private: yes
+    - name: ansible_password
+      prompt: "Enter ssh password"
+      private: yes
   tasks:
     - name: Set new root password
-      juniper.junos.junos_system:
-        hostname: "{{ inventory_hostname }}"
-        username: root
-        password: "{{ ansible_ssh_pass }}"
+      junipernetworks.junos.junos_system:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        user: root
+        passwd: "{{ ansible_password }}"
         new_password: "{{ new_password }}"
       register: result
-    - name: Save configuration
-      juniper.junos.junos_save:
-        comment: "Updated root password by Ansible"
-      when: result.changed
