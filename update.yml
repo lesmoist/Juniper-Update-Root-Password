@@ -1,19 +1,32 @@
-- name: Update Junos root password
-  hosts: juniper_devices
+- name: Update the admin password on the junos device
+  hosts: all
+  connection: local
   gather_facts: no
+  roles:
+    - Juniper.junos
+  vars:
+    ansible_public_key: "{{ lookup('file', '/Users/USER/.ssh/id_rsa.pub') }}"
+    ansible_python_interpreter: "/Users/USER/py-venv/ansible-2.10/bin/python3"
   vars_prompt:
-    - name: new_password
-      prompt: "Enter new root password"
-      private: yes
-    - name: ansible_password
-      prompt: "Enter ssh password"
-      private: yes
+  - name: USER
+    prompt: Device user
+    private: no
+  - name: PASSWORD
+    prompt: Device password
+    private: yes
   tasks:
-    - name: Set new root password
-      junipernetworks.junos.junos_system:
-        host: "{{ inventory_hostname }}"
-        port: 22
-        user: root
-        passwd: "{{ ansible_password }}"
-        new_password: "{{ new_password }}"
-      register: result
+    - name: Build new admin password
+      template:
+        src: admin_password_update.conf.j2
+        dest: ./admin_password_update.conf
+
+    - name: Install config
+      juniper_junos_config:
+        host={{ junos_devices }}
+        user={{ USER }}
+        passwd={{ PASSWORD }}
+        port=22
+        timeout=500
+        file=admin_password_update.conf
+        comment="Committed by ansible {{ USER }} "
+        load=merge
